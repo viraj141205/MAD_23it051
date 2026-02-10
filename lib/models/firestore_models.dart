@@ -182,3 +182,118 @@ class AnalysisReportModel {
     );
   }
 }
+
+/// Snippet model for Firestore
+class SnippetModel {
+  final String id;
+  final String userId;
+  final String title;
+  final String language;
+  final String content;
+  final String analysis;
+  final String status;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  SnippetModel({
+    required this.id,
+    required this.userId,
+    required this.title,
+    required this.language,
+    required this.content,
+    required this.analysis,
+    required this.status,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  /// Convert SnippetModel to JSON for Firestore
+  Map<String, dynamic> toJSON() {
+    return {
+      'userId': userId,
+      'title': title,
+      'language': language,
+      'content': content,
+      'analysis': analysis,
+      'status': status,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
+    };
+  }
+
+  /// Create SnippetModel from Firestore document
+  factory SnippetModel.fromJSON(String id, Map<String, dynamic> json) {
+    return SnippetModel(
+      id: id,
+      userId: json['userId'] ?? '',
+      title: json['title'] ?? '',
+      language: json['language'] ?? '',
+      content: json['content'] ?? '',
+      analysis: json['analysis'] ?? 'Pending',
+      status: json['status'] ?? 'Draft',
+      createdAt: (json['createdAt'] as Timestamp? ?? Timestamp.now()).toDate(),
+      updatedAt: (json['updatedAt'] as Timestamp? ?? Timestamp.now()).toDate(),
+    );
+  }
+
+  /// Copy with method
+  SnippetModel copyWith({
+    String? id,
+    String? userId,
+    String? title,
+    String? language,
+    String? content,
+    String? analysis,
+    String? status,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return SnippetModel(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      title: title ?? this.title,
+      language: language ?? this.language,
+      content: content ?? this.content,
+      analysis: analysis ?? this.analysis,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+}
+
+/// Model for independent code analysis history
+class AnalysisResultModel {
+  final String id;
+  final String userId;
+  final String codeSnippet;
+  final String result;
+  final DateTime createdAt;
+
+  AnalysisResultModel({
+    required this.id,
+    required this.userId,
+    required this.codeSnippet,
+    required this.result,
+    required this.createdAt,
+  });
+
+  Map<String, dynamic> toJSON() {
+    return {
+      'userId': userId,
+      'codeSnippet': codeSnippet,
+      'result': result,
+      'createdAt': Timestamp.fromDate(createdAt),
+    };
+  }
+
+  factory AnalysisResultModel.fromJSON(String id, Map<String, dynamic> json) {
+    return AnalysisResultModel(
+      id: id,
+      userId: json['userId'] ?? '',
+      codeSnippet: json['codeSnippet'] ?? '',
+      result: json['result'] ?? '',
+      createdAt: (json['createdAt'] as Timestamp? ?? Timestamp.now()).toDate(),
+    );
+  }
+}

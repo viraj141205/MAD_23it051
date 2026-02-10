@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import 'analysis_screen.dart';
+import 'reports_screen.dart';
+import 'profile_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -55,22 +58,41 @@ class DashboardScreen extends StatelessWidget {
                   _buildDashboardCard(
                     context,
                     'Code Analysis',
-                    Icons.code,
+                    Icons.analytics,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AnalysisScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildDashboardCard(
                     context,
                     'Reports',
                     Icons.report,
-                  ),
-                  _buildDashboardCard(
-                    context,
-                    'Settings',
-                    Icons.settings,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ReportsScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildDashboardCard(
                     context,
                     'Profile',
                     Icons.person,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -81,14 +103,14 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDashboardCard(BuildContext context, String title, IconData icon) {
+  Widget _buildDashboardCard(BuildContext context, String title, IconData icon, {VoidCallback? onTap}) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: () {
+        onTap: onTap ?? () {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('$title feature coming soon!')),
           );

@@ -173,6 +173,143 @@ class FirestoreDatabase {
     }
   }
 
+
+  // ==================== Snippets Collection ====================
+
+  /// Create a new code snippet
+  static Future<String> createSnippet({
+    required String title,
+    required String language,
+    required String content,
+    String analysis = 'Pending',
+    String status = 'Draft',
+  }) async {
+    try {
+      final userId = FirebaseService.currentUser?.uid;
+      if (userId == null) throw Exception('User not authenticated');
+
+      final snippetRef = await _firestore.collection('snippets').add({
+        'userId': userId,
+        'title': title,
+        'language': language,
+        'content': content,
+        'analysis': analysis,
+        'status': status,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      return snippetRef.id;
+    } catch (e) {
+      debugPrint('Error creating snippet: $e');
+      rethrow;
+    }
+  }
+
+  /// Get user's snippets
+  static Stream<List<SnippetModel>> getUserSnippets() {
+    try {
+      final userId = FirebaseService.currentUser?.uid;
+      if (userId == null) return Stream.value([]);
+
+      return _firestore
+          .collection('snippets')
+          .where('userId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snapshot) {
+        return snapshot.docs
+            .map((doc) => SnippetModel.fromJSON(doc.id, doc.data()))
+            .toList();
+      });
+    } catch (e) {
+      debugPrint('Error getting snippets: $e');
+      return Stream.value([]);
+    }
+  }
+
+  /// Get single snippet
+  static Future<SnippetModel?> getSnippet(String snippetId) async {
+    try {
+      final doc = await _firestore.collection('snippets').doc(snippetId).get();
+      if (!doc.exists) return null;
+      return SnippetModel.fromJSON(doc.id, doc.data()!);
+    } catch (e) {
+      debugPrint('Error getting snippet: $e');
+      return null;
+    }
+  }
+
+  /// Update snippet
+  static Future<void> updateSnippet(
+    String snippetId,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      await _firestore.collection('snippets').doc(snippetId).update({
+        ...data,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('Error updating snippet: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete snippet
+  static Future<void> deleteSnippet(String snippetId) async {
+    try {
+      await _firestore.collection('snippets').doc(snippetId).delete();
+    } catch (e) {
+      debugPrint('Error deleting snippet: $e');
+      rethrow;
+    }
+  }
+
+  // ==================== Analysis History Collection ====================
+
+  /// Save analysis result to history
+  static Future<void> saveAnalysisResult({
+    required String codeSnippet,
+    required String result,
+  }) async {
+    try {
+      final userId = FirebaseService.currentUser?.uid;
+      if (userId == null) throw Exception('User not authenticated');
+
+      await _firestore.collection('analysis_history').add({
+        'userId': userId,
+        'codeSnippet': codeSnippet,
+        'result': result,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('Error saving analysis result: $e');
+    }
+  }
+
+  /// Get user's analysis history
+  static Stream<List<AnalysisResultModel>> getAnalysisHistory() {
+    try {
+      final userId = FirebaseService.currentUser?.uid;
+      if (userId == null) return Stream.value([]);
+
+      return _firestore
+          .collection('analysis_history')
+          .where('userId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snapshot) {
+        return snapshot.docs
+            .map((doc) => AnalysisResultModel.fromJSON(doc.id, doc.data()))
+            .toList();
+      });
+    } catch (e) {
+      debugPrint('Error getting analysis history: $e');
+      return Stream.value([]);
+    }
+  }
+
   // ==================== User Settings Collection ====================
 
   /// Save user settings
@@ -294,6 +431,16 @@ class FirestoreDatabase {
           .get();
 
       for (var doc in logs.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // Delete analysis history
+      final history = await _firestore
+          .collection('analysis_history')
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      for (var doc in history.docs) {
         batch.delete(doc.reference);
       }
 
