@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "332408601425",
+    "firebase_url": "https://code-analizer-default-rtdb.firebaseio.com",
+    "project_id": "code-analizer",
+    "storage_bucket": "code-analizer.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:332408601425:android:0911bb76374856b78cf170",
+        "android_client_info": {
+          "package_name": "com.example.code_analyzer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCuvCmo4vTjTekl53fnoGbA1kB-libUlI8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
