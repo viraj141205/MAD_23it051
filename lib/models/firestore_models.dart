@@ -267,6 +267,7 @@ class AnalysisResultModel {
   final String id;
   final String userId;
   final String codeSnippet;
+  final String language;
   final String result;
   final DateTime createdAt;
 
@@ -274,6 +275,7 @@ class AnalysisResultModel {
     required this.id,
     required this.userId,
     required this.codeSnippet,
+    required this.language,
     required this.result,
     required this.createdAt,
   });
@@ -282,6 +284,7 @@ class AnalysisResultModel {
     return {
       'userId': userId,
       'codeSnippet': codeSnippet,
+      'language': language,
       'result': result,
       'createdAt': Timestamp.fromDate(createdAt),
     };
@@ -292,6 +295,7 @@ class AnalysisResultModel {
       id: id,
       userId: json['userId'] ?? '',
       codeSnippet: json['codeSnippet'] ?? '',
+      language: json['language'] ?? 'Unknown',
       result: json['result'] ?? '',
       createdAt: (json['createdAt'] as Timestamp? ?? Timestamp.now()).toDate(),
     );

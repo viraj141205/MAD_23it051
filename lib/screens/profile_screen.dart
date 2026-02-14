@@ -17,37 +17,39 @@ class ProfileScreen extends StatelessWidget {
         title: const Text('My Profile'),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          children: [
-            const CircleAvatar(
-              radius: 50,
-              child: Icon(Icons.person, size: 50),
-            ),
-            const SizedBox(height: 24),
-            _buildProfileItem(Icons.person_outline, 'Name', user?['name'] ?? 'N/A'),
-            const Divider(),
-            _buildProfileItem(Icons.email_outlined, 'Email', user?['email'] ?? 'N/A'),
-            const Divider(),
-            _buildProfileItem(
-              Icons.calendar_today_outlined,
-              'Joined',
-              user?['createdAt'] != null
-                  ? DateFormat('MMM dd, yyyy').format((user?['createdAt']).toDate())
-                  : 'N/A',
-            ),
-            const Spacer(),
-            CustomButton(
-              text: 'Logout',
-              onPressed: () async {
-                await authProvider.logout();
-                if (context.mounted) {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                }
-              },
-            ),
-          ],
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            children: [
+              const CircleAvatar(
+                radius: 50,
+                child: Icon(Icons.person, size: 50),
+              ),
+              const SizedBox(height: 24),
+              _buildProfileItem(Icons.person_outline, 'Name', user?['name'] ?? 'N/A'),
+              const Divider(),
+              _buildProfileItem(Icons.email_outlined, 'Email', user?['email'] ?? 'N/A'),
+              const Divider(),
+              _buildProfileItem(
+                Icons.calendar_today_outlined,
+                'Joined',
+                user?['createdAt'] != null
+                    ? DateFormat('MMM dd, yyyy').format((user?['createdAt']).toDate())
+                    : 'N/A',
+              ),
+              const Spacer(),
+              CustomButton(
+                text: 'Logout',
+                onPressed: () async {
+                  await authProvider.logout();
+                  if (context.mounted) {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  }
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

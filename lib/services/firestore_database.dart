@@ -271,6 +271,7 @@ class FirestoreDatabase {
   /// Save analysis result to history
   static Future<void> saveAnalysisResult({
     required String codeSnippet,
+    required String language,
     required String result,
   }) async {
     try {
@@ -280,6 +281,7 @@ class FirestoreDatabase {
       await _firestore.collection('analysis_history').add({
         'userId': userId,
         'codeSnippet': codeSnippet,
+        'language': language,
         'result': result,
         'createdAt': FieldValue.serverTimestamp(),
       });

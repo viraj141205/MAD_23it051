@@ -8,6 +8,7 @@ class CustomTextField extends StatelessWidget {
   final TextInputType keyboardType;
   final int maxLines;
   final String? Function(String?)? validator;
+  final bool isCode;
 
   const CustomTextField({
     super.key,
@@ -18,6 +19,7 @@ class CustomTextField extends StatelessWidget {
     this.keyboardType = TextInputType.text,
     this.maxLines = 1,
     this.validator,
+    this.isCode = false,
   });
 
   @override
@@ -26,16 +28,25 @@ class CustomTextField extends StatelessWidget {
       controller: controller,
       obscureText: obscureText,
       maxLines: maxLines,
-      keyboardType: keyboardType,
+      keyboardType: isCode ? TextInputType.multiline : keyboardType,
       validator: validator,
+      style: isCode 
+          ? const TextStyle(fontFamily: 'monospace', fontSize: 14) 
+          : null,
       decoration: InputDecoration(
         labelText: labelText,
         hintText: hintText,
+        filled: isCode,
+        fillColor: isCode ? Colors.grey[50] : null,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: isCode ? Colors.grey[300]! : Colors.grey),
+          borderRadius: BorderRadius.circular(8),
+        ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Theme.of(context).primaryColor),
+          borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 2),
           borderRadius: BorderRadius.circular(8),
         ),
       ),

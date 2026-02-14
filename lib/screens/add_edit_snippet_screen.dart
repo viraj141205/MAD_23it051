@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/firestore_models.dart';
 import '../services/firestore_database.dart';
+import '../services/code_analyzer_service.dart';
+import '../services/code_execution_service.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 
@@ -16,24 +18,53 @@ class AddEditSnippetScreen extends StatefulWidget {
 class _AddEditSnippetScreenState extends State<AddEditSnippetScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
-  late TextEditingController _languageController;
   late TextEditingController _contentController;
+  String _language = 'Java';
   String _status = 'Draft';
   bool _isLoading = false;
+
+  final List<String> _languages = [
+    'Java',
+    'C++',
+    'Python',
+    'JavaScript',
+    'Dart',
+    'Go',
+    'Rust',
+    'Swift',
+    'Kotlin',
+    'PHP',
+    'C#',
+    'Ruby',
+    'C',
+    'HTML/CSS',
+    'SQL',
+    'TypeScript',
+    'Other'
+  ];
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.snippet?.title ?? '');
-    _languageController = TextEditingController(text: widget.snippet?.language ?? '');
     _contentController = TextEditingController(text: widget.snippet?.content ?? '');
     _status = widget.snippet?.status ?? 'Draft';
+
+    // Initialize language
+    final initialLanguage = widget.snippet?.language ?? 'Java';
+    if (initialLanguage.isNotEmpty) {
+      if (!_languages.contains(initialLanguage)) {
+        _languages.insert(0, initialLanguage);
+      }
+      _language = initialLanguage;
+    } else {
+      _language = 'Java';
+    }
   }
 
   @override
   void dispose() {
     _titleController.dispose();
-    _languageController.dispose();
     _contentController.dispose();
     super.dispose();
   }
@@ -45,21 +76,48 @@ class _AddEditSnippetScreenState extends State<AddEditSnippetScreen> {
       try {
         if (widget.snippet == null) {
           // CREATE
+          final analysis = CodeAnalyzerService.analyzeCode(
+            _contentController.text.trim(),
+            _language,
+          );
           await FirestoreDatabase.createSnippet(
             title: _titleController.text.trim(),
-            language: _languageController.text.trim(),
+            language: _language,
             content: _contentController.text.trim(),
             status: _status,
+            analysis: analysis,
           );
         } else {
           // UPDATE
+          final content = _contentController.text.trim();
+          final staticAnalysis = CodeAnalyzerService.analyzeCode(content, _language);
+
+          String executionFeedback = '';
+          final pistonLang = CodeExecutionService.getPistonLanguage(_language);
+
+          if (pistonLang != null) {
+            final execResult = await CodeExecutionService.executeCode(content, _language);
+            if (execResult != null) {
+              if (execResult.compileOutput != null && execResult.compileOutput!.isNotEmpty) {
+                executionFeedback = '\n\n❌ Compiler Errors:\n${execResult.compileOutput}';
+              } else if (execResult.stderr.isNotEmpty) {
+                executionFeedback = '\n\n❌ Runtime Errors:\n${execResult.stderr}';
+              } else {
+                executionFeedback = '\n\n✅ Execution Successful!\nOutput:\n${execResult.stdout}';
+              }
+            }
+          }
+
+          final report = staticAnalysis + executionFeedback;
+
           await FirestoreDatabase.updateSnippet(
             widget.snippet!.id,
             {
               'title': _titleController.text.trim(),
-              'language': _languageController.text.trim(),
-              'content': _contentController.text.trim(),
+              'language': _language,
+              'content': content,
               'status': _status,
+              'analysis': report, // Use the combined report
             },
           );
         }
@@ -107,19 +165,33 @@ class _AddEditSnippetScreenState extends State<AddEditSnippetScreen> {
                         validator: (value) => value == null || value.isEmpty ? 'Title is required' : null,
                       ),
                       const SizedBox(height: 16),
-                      CustomTextField(
-                        controller: _languageController,
-                        labelText: 'Language',
-                        hintText: 'e.g. Python, Dart, JavaScript',
+                      DropdownButtonFormField<String>(
+                        value: _language,
+                        decoration: const InputDecoration(
+                          labelText: 'Language',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: _languages
+                            .map((l) => DropdownMenuItem(value: l, child: Text(l)))
+                            .toList(),
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _language = value;
+                              _contentController.clear();
+                            });
+                          }
+                        },
                         validator: (value) => value == null || value.isEmpty ? 'Language is required' : null,
                       ),
                       const SizedBox(height: 16),
                       CustomTextField(
-                        controller: _contentController,
+                        controller: _contentController, // Changed from _contentController
                         labelText: 'Code Content',
-                        hintText: 'Paste your code here',
-                        maxLines: 10,
-                        validator: (value) => value == null || value.isEmpty ? 'Content is required' : null,
+                        hintText: 'Paste your code here...',
+                        maxLines: 15,
+                        isCode: true,
+                        validator: (value) => value == null || value.isEmpty ? 'Code is required' : null,
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
