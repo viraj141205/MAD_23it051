@@ -77,12 +77,22 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         if (result.compileOutput != null && result.compileOutput!.isNotEmpty) {
           executionFeedback = '\n\n❌ Compiler Errors:\n${result.compileOutput}';
         } else if (result.stderr.isNotEmpty) {
-          executionFeedback = '\n\n❌ Runtime Errors:\n${result.stderr}';
+          if (result.stderr.contains('401')) {
+            executionFeedback = '\n\n❌ API Error: Access Restricted (401)\nThe public Piston API now requires whitelisting. Please configure your own Piston instance or key in Profile > API Settings.';
+          } else {
+            executionFeedback = '\n\n❌ Errors:\n${result.stderr}';
+          }
         } else {
-          executionFeedback = '\n\n✅ Execution Successful!\nOutput:\n${result.stdout}';
+          executionFeedback = '\n\n✅ Execution Successful!' + 
+                             (result.isMock ? ' (Simulated Output)' : '') + 
+                             '\nOutput:\n${result.stdout}';
+          
+          if (result.isMock) {
+            executionFeedback += '\n\nℹ️ Note: This is a simulated result because the public API is currently restricted. Host your own Piston instance for real-time execution of any code.';
+          }
         }
       } else {
-        executionFeedback = '\n\n⚠️ Execution failed (server error or timeout).';
+        executionFeedback = '\n\n⚠️ Execution failed: Service returned no result.';
       }
     } else {
       executionFeedback = '\n\nℹ️ Execution is not supported for this language yet.';

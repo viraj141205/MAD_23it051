@@ -135,11 +135,31 @@ class CodeAnalyzerService {
           !statementCheck.contains('for (') &&
           !statementCheck.contains('while(') &&
           !statementCheck.contains('while (') &&
+          !statementCheck.startsWith('else') &&
+          !statementCheck.startsWith('try') &&
+          !statementCheck.startsWith('catch') &&
+          !statementCheck.startsWith('finally') &&
+          !statementCheck.startsWith('switch') &&
+          !statementCheck.startsWith('do') &&
+          !statementCheck.startsWith('case ') &&
+          !statementCheck.startsWith('default:') &&
           !statementCheck.startsWith('@') &&
           !statementCheck.startsWith('public:') &&
           !statementCheck.startsWith('private:') &&
           !statementCheck.startsWith('protected:')) {
-        issues.add('Line ${i + 1}: Potential missing semicolon (";").');
+        
+        // Final check: if the next non-empty line starts with '{', it's likely a definition
+        bool nextIsBrace = false;
+        for (int j = i + 1; j < lines.length; j++) {
+          String nextLine = _stripComments(lines[j]).trim();
+          if (nextLine.isEmpty) continue;
+          if (nextLine.startsWith('{')) nextIsBrace = true;
+          break;
+        }
+
+        if (!nextIsBrace) {
+          issues.add('Line ${i + 1}: Potential missing semicolon (";").');
+        }
       }
     }
 
@@ -194,8 +214,26 @@ class CodeAnalyzerService {
           !statementCheck.startsWith('if') && 
           !statementCheck.startsWith('for') && 
           !statementCheck.startsWith('while') && 
+          !statementCheck.startsWith('else') && 
+          !statementCheck.startsWith('try') && 
+          !statementCheck.startsWith('catch') && 
+          !statementCheck.startsWith('finally') && 
+          !statementCheck.startsWith('switch') && 
+          !statementCheck.startsWith('case') && 
+          !statementCheck.startsWith('default') && 
           !statementCheck.endsWith(',')) {
-         notes.add('Line ${i + 1}: Consider adding a semicolon (";") for clarity.');
+         
+         bool nextIsBrace = false;
+         for (int j = i + 1; j < lines.length; j++) {
+           String nextLine = _stripComments(lines[j]).trim();
+           if (nextLine.isEmpty) continue;
+           if (nextLine.startsWith('{')) nextIsBrace = true;
+           break;
+         }
+
+         if (!nextIsBrace) {
+           notes.add('Line ${i + 1}: Consider adding a semicolon (";") for clarity.');
+         }
       }
     }
 
