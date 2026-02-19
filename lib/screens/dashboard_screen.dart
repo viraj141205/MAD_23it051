@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/coderabbit_logo.dart';
 import 'analysis_screen.dart';
 import 'reports_screen.dart';
 import 'profile_screen.dart';
+import 'code_review_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -20,7 +22,21 @@ class DashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            CodeRabbitLogo(size: 36),
+            SizedBox(width: 10),
+            Text(
+              'CodeRabbit',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
         centerTitle: true,
         actions: [
           IconButton(

@@ -40,17 +40,6 @@ class ProfileScreen extends StatelessWidget {
                     : 'N/A',
               ),
               const Divider(),
-              ListTile(
-                leading: const Icon(Icons.settings_outlined, color: Colors.grey),
-                title: const Text('API Settings'),
-                subtitle: const Text('Configure custom Piston API'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                  );
-                },
-              ),
               const Spacer(),
               CustomButton(
                 text: 'Logout',

@@ -1,4 +1,4 @@
-name: code_analyzer
+name: coderabbit
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -40,6 +40,7 @@ dependencies:
   cloud_firestore: ^4.16.0
   intl: ^0.19.0
   http: ^1.2.0
+  google_generative_ai: ^0.4.5
 
 dev_dependencies:
   flutter_test:

@@ -13,6 +13,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _urlController = TextEditingController();
   final _keyController = TextEditingController();
+  final _geminiKeyController = TextEditingController();
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -28,6 +29,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (settings != null) {
         _urlController.text = settings['pistonUrl'] ?? 'https://emkc.org/api/v2/piston/execute';
         _keyController.text = settings['pistonKey'] ?? '';
+        _geminiKeyController.text = settings['geminiKey'] ?? '';
       } else {
         _urlController.text = 'https://emkc.org/api/v2/piston/execute';
       }
@@ -53,6 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await FirestoreDatabase.saveUserSettings({
         'pistonUrl': _urlController.text.trim(),
         'pistonKey': _keyController.text.trim(),
+        'geminiKey': _geminiKeyController.text.trim(),
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -74,6 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _urlController.dispose();
     _keyController.dispose();
+    _geminiKeyController.dispose();
     super.dispose();
   }
 
@@ -111,6 +115,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     controller: _keyController,
                     labelText: 'Authorization Key (Optional)',
                     hintText: 'Your API key or token',
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Gemini AI Configuration',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Provide your Google Gemini API key to enable powerful AI-driven code reviews.',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+                  CustomTextField(
+                    controller: _geminiKeyController,
+                    labelText: 'Gemini API Key',
+                    hintText: 'Enter your Gemini API key',
                     obscureText: true,
                   ),
                   const SizedBox(height: 32),

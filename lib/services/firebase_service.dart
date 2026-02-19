@@ -33,10 +33,13 @@ class FirebaseService {
         // so the user can be notified that their profile might be incomplete.
       }
 
+      // Fetch the newly created profile to return full data (including createdAt)
+      final userData = await _getUserProfile(userCredential.user!.uid);
+      
       return {
         'success': true,
         'message': 'Registration successful',
-        'user': {
+        'user': userData ?? {
           'uid': userCredential.user!.uid,
           'email': userCredential.user!.email,
           'name': name,
@@ -71,10 +74,10 @@ class FirebaseService {
       return {
         'success': true,
         'message': 'Login successful',
-        'user': {
+        'user': userData ?? {
           'uid': userCredential.user!.uid,
           'email': userCredential.user!.email,
-          'name': userData?['name'] ?? 'User',
+          'name': 'User',
         }
       };
     } on FirebaseAuthException catch (e) {

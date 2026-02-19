@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
+import '../widgets/coderabbit_logo.dart';
 import '../providers/auth_provider.dart';
 import 'register_screen.dart';
 
@@ -50,23 +51,31 @@ class _LoginScreenState extends State<LoginScreen> {
     final authProvider = context.watch<AuthProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
-        centerTitle: true,
-      ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Form(
             key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                const CodeRabbitLogo(size: 110),
+                const SizedBox(height: 20),
                 const Text(
-                  'Welcome to Code Analyzer',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  'CodeRabbit',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF3F51B5),
+                    letterSpacing: 1.2,
+                  ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 6),
+                const Text(
+                  'AI-Powered Code Analysis',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+                const SizedBox(height: 36),
                 CustomTextField(
                   controller: _emailController,
                   labelText: 'Email',
