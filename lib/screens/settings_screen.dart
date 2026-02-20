@@ -11,8 +11,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final _urlController = TextEditingController();
-  final _keyController = TextEditingController();
   final _geminiKeyController = TextEditingController();
   bool _isLoading = true;
   bool _isSaving = false;
@@ -27,11 +25,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final settings = await FirestoreDatabase.getUserSettings();
       if (settings != null) {
-        _urlController.text = settings['pistonUrl'] ?? 'https://emkc.org/api/v2/piston/execute';
-        _keyController.text = settings['pistonKey'] ?? '';
         _geminiKeyController.text = settings['geminiKey'] ?? '';
-      } else {
-        _urlController.text = 'https://emkc.org/api/v2/piston/execute';
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -43,18 +37,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _saveSettings() async {
-    if (_urlController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('API URL cannot be empty')),
-      );
-      return;
-    }
-
     setState(() => _isSaving = true);
     try {
       await FirestoreDatabase.saveUserSettings({
-        'pistonUrl': _urlController.text.trim(),
-        'pistonKey': _keyController.text.trim(),
         'geminiKey': _geminiKeyController.text.trim(),
       });
       if (mounted) {
@@ -75,8 +60,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
-    _urlController.dispose();
-    _keyController.dispose();
     _geminiKeyController.dispose();
     super.dispose();
   }
@@ -95,36 +78,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'Piston API Configuration',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Customize the Piston API endpoint or provide an authorization key for whitelisted access.',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  const SizedBox(height: 24),
-                  CustomTextField(
-                    controller: _urlController,
-                    labelText: 'API Execution URL',
-                    hintText: 'https://emkc.org/api/v2/piston/execute',
-                  ),
-                  const SizedBox(height: 16),
-                  CustomTextField(
-                    controller: _keyController,
-                    labelText: 'Authorization Key (Optional)',
-                    hintText: 'Your API key or token',
-                    obscureText: true,
+                  // Judge0 Info
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.07),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(Icons.rocket_launch_outlined, color: Colors.blue),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Code execution is powered by Judge0 CE (ce.judge0.com). '
+                            'No API key needed — it works out of the box!',
+                            style: TextStyle(fontSize: 13),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 32),
+                  // Gemini AI
                   const Text(
                     'Gemini AI Configuration',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Provide your Google Gemini API key to enable powerful AI-driven code reviews.',
+                    'Provide your Google Gemini API key to enable AI-driven code reviews and conversions.',
                     style: TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 24),

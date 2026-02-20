@@ -93,18 +93,26 @@ class _AddEditSnippetScreenState extends State<AddEditSnippetScreen> {
           final staticAnalysis = CodeAnalyzerService.analyzeCode(content, _language);
 
           String executionFeedback = '';
-          final pistonLang = CodeExecutionService.getPistonLanguage(_language);
+          final langId = CodeExecutionService.getLanguageId(_language);
 
-          if (pistonLang != null) {
-            final execResult = await CodeExecutionService.executeCode(content, _language);
-            if (execResult != null) {
-              if (execResult.compileOutput != null && execResult.compileOutput!.isNotEmpty) {
-                executionFeedback = '\n\n❌ Compiler Errors:\n${execResult.compileOutput}';
+          if (langId != null) {
+            try {
+              final execResult =
+                  await CodeExecutionService.executeCode(content, _language);
+              if (execResult.compileOutput != null &&
+                  execResult.compileOutput!.isNotEmpty) {
+                executionFeedback =
+                    '\n\n❌ Compile Error:\n${execResult.compileOutput}';
               } else if (execResult.stderr.isNotEmpty) {
-                executionFeedback = '\n\n❌ Runtime Errors:\n${execResult.stderr}';
+                executionFeedback =
+                    '\n\n❌ Runtime Error:\n${execResult.stderr}';
               } else {
-                executionFeedback = '\n\n✅ Execution Successful!\nOutput:\n${execResult.stdout}';
+                executionFeedback =
+                    '\n\n✅ Execution Successful! [${execResult.statusDescription}]'
+                    '\nOutput:\n${execResult.stdout}';
               }
+            } catch (e) {
+              executionFeedback = '\n\n⚠️ Execution error: $e';
             }
           }
 

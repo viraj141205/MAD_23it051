@@ -1,189 +1,110 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'firestore_database.dart';
 
+/// Result of a Judge0 code execution.
 class CodeExecutionResult {
   final String stdout;
   final String stderr;
   final String? compileOutput;
   final int exitCode;
-  final bool isMock;
+  final String statusDescription;
 
-  CodeExecutionResult({
+  const CodeExecutionResult({
     required this.stdout,
     required this.stderr,
     this.compileOutput,
     required this.exitCode,
-    this.isMock = false,
+    this.statusDescription = '',
   });
 
-  bool get hasErrors => stderr.isNotEmpty || (compileOutput != null && compileOutput!.isNotEmpty);
+  bool get hasErrors =>
+      stderr.isNotEmpty ||
+      (compileOutput != null && compileOutput!.isNotEmpty);
+
+  bool get isSuccess => exitCode == 0 && !hasErrors;
 }
 
+/// Executes code exclusively via the Judge0 Community Edition public API.
 class CodeExecutionService {
-  static const String _defaultBaseUrl = 'https://emkc.org/api/v2/piston/execute';
-  static const String _judge0BaseUrl = 'https://ce.judge0.com/submissions?base64_encoded=false&wait=true';
+  // Judge0 CE – submissions endpoint (wait=true → synchronous result)
+  static const String _judge0Url =
+      'https://ce.judge0.com/submissions?base64_encoded=false&wait=true';
 
-  static final Map<String, String> _pistonLanguageMap = {
-    'Java': 'java',
-    'C++': 'cpp',
-    'Python': 'python',
-    'JavaScript': 'javascript',
-    'Dart': 'dart',
-    'Go': 'go',
-    'Rust': 'rust',
-    'Swift': 'swift',
-    'Kotlin': 'kotlin',
-    'PHP': 'php',
-    'C#': 'csharp',
-    'Ruby': 'ruby',
-    'C': 'c',
-    'TypeScript': 'typescript',
-  };
-
-  // Language IDs for ce.judge0.com
-  static final Map<String, int> _judge0LanguageMap = {
-    'Java': 62,
-    'C++': 54, // GCC 9.2.0
-    'Python': 71, // 3.8.1
+  /// Language IDs for ce.judge0.com
+  /// Full list: https://ce.judge0.com/languages
+  static const Map<String, int> _languageIds = {
+    'C': 50,          // GCC 9.2.0
+    'C++': 54,        // GCC 9.2.0
+    'C#': 51,         // Mono 6.6.0
+    'Java': 62,       // OpenJDK 13.0.1
+    'Kotlin': 78,     // 1.3.70
+    'Python': 71,     // CPython 3.8.1
     'JavaScript': 63, // Node.js 12.14.0
-    'C': 50, // GCC 9.2.0
-    'Ruby': 72,
-    'Go': 60,
-    'Rust': 73,
-    'PHP': 68,
-    'C#': 51,
-    'TypeScript': 74,
+    'TypeScript': 74, // 3.7.4
+    'Go': 60,         // 1.13.5
+    'Rust': 73,       // 1.40.0
+    'Ruby': 72,       // 2.7.0
+    'PHP': 68,        // 7.4.1
+    'Swift': 83,      // 5.2.3
+    'Dart': 90,       // 2.19.2 (if available on the instance)
   };
 
-  static String? getPistonLanguage(String language) {
-    return _pistonLanguageMap[language];
-  }
+  /// Returns the Judge0 language ID for [language], or null if unsupported.
+  static int? getLanguageId(String language) => _languageIds[language];
 
-  static int? getJudge0LanguageId(String language) {
-    return _judge0LanguageMap[language];
-  }
+  /// Returns the list of languages supported by Judge0.
+  static List<String> get supportedLanguages =>
+      _languageIds.keys.toList()..sort();
 
-  static Future<CodeExecutionResult?> executeCode(String code, String language) async {
-    // 1. Try User-configured API (if any)
-    try {
-      final settings = await FirestoreDatabase.getUserSettings();
-      if (settings != null && settings['pistonUrl'] != null && settings['pistonUrl'] != _defaultBaseUrl) {
-         return await _executeWithPiston(code, language, settings['pistonUrl'], settings['pistonKey']);
-      }
-    } catch (e) {
-      print('Error fetching settings: $e');
+  /// Execute [code] written in [language] using Judge0.
+  ///
+  /// Returns a [CodeExecutionResult] describing stdout/stderr/compile output.
+  /// Throws an exception if the language is unsupported or the HTTP call fails.
+  static Future<CodeExecutionResult> executeCode(
+      String code, String language) async {
+    final langId = getLanguageId(language);
+    if (langId == null) {
+      throw UnsupportedError(
+          '$language is not supported by Judge0 in this app.');
     }
 
-    // 2. Try Judge0 (Primary for public)
-    final judge0Id = getJudge0LanguageId(language);
-    if (judge0Id != null) {
-      try {
-        final result = await _executeWithJudge0(code, judge0Id);
-        if (result != null && !result.stderr.contains('403') && !result.stderr.contains('401')) {
-           return result;
-        }
-      } catch (e) {
-        print('Judge0 failed: $e');
-      }
+    final response = await http
+        .post(
+          Uri.parse(_judge0Url),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'source_code': code,
+            'language_id': langId,
+          }),
+        )
+        .timeout(const Duration(seconds: 15));
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return _parseResponse(jsonDecode(response.body));
     }
 
-    // 3. Try Piston (Legacy Fallback - will likely 401)
-    return await _executeWithPiston(code, language, _defaultBaseUrl, null);
+    throw Exception(
+        'Judge0 returned HTTP ${response.statusCode}: ${response.body}');
   }
 
-  static Future<CodeExecutionResult?> _executeWithPiston(String code, String language, String apiUrl, String? apiKey) async {
-    final pistonLang = getPistonLanguage(language);
-    if (pistonLang == null) return null;
+  // ─── Private ──────────────────────────────────────────────────────────────
 
-    try {
-      final headers = {'Content-Type': 'application/json'};
-      if (apiKey != null && apiKey.isNotEmpty) {
-        headers['Authorization'] = apiKey;
-      }
+  static CodeExecutionResult _parseResponse(Map<String, dynamic> data) {
+    final statusId = data['status']?['id'] as int? ?? -1;
+    final statusDesc =
+        data['status']?['description'] as String? ?? 'Unknown';
 
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: headers,
-        body: jsonEncode({
-          'language': pistonLang,
-          'version': '*',
-          'files': [
-            {'content': code}
-          ],
-        }),
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final run = data['run'];
-        final compile = data['compile'];
-
-        return CodeExecutionResult(
-          stdout: run['stdout'] ?? '',
-          stderr: run['stderr'] ?? '',
-          compileOutput: compile != null ? (compile['stdout'] ?? '') + (compile['stderr'] ?? '') : null,
-          exitCode: run['code'] ?? 0,
-        );
-      } else if (response.statusCode == 401 || response.statusCode == 403) {
-        return _runMockExecution(code, language, 'API ERROR (${response.statusCode})');
-      } else {
-        return CodeExecutionResult(
-          stdout: '',
-          stderr: 'API ERROR (${response.statusCode}): ${response.body}',
-          exitCode: response.statusCode,
-        );
-      }
-    } catch (e) {
-      return _runMockExecution(code, language, 'Connection Error: $e');
-    }
-  }
-
-  static Future<CodeExecutionResult?> _executeWithJudge0(String code, int languageId) async {
-    try {
-      final response = await http.post(
-        Uri.parse(_judge0BaseUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'source_code': code,
-          'language_id': languageId,
-        }),
-      ).timeout(const Duration(seconds: 10));
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return CodeExecutionResult(
-          stdout: data['stdout'] ?? '',
-          stderr: data['stderr'] ?? '',
-          compileOutput: data['compile_output'],
-          exitCode: (data['status']?['id'] == 3) ? 0 : 1,
-        );
-      }
-    } catch (e) {
-       print('Judge0 internal error: $e');
-    }
-    return null;
-  }
-
-  static CodeExecutionResult _runMockExecution(String code, String language, String originalError) {
-    String stdout = '';
-    String stderr = '';
-    
-    final normalizedCode = code.toLowerCase().trim();
-    
-    if (normalizedCode.contains('hello world')) {
-      stdout = 'Hello World!\n';
-    } else if (normalizedCode.contains('print(') || normalizedCode.contains('console.log(') || normalizedCode.contains('cout <<')) {
-      stdout = 'Execution successful (mock output for demo purposes).\n';
-    } else {
-      stderr = '$originalError\n\n(No simulated output found for this snippet. Public APIs are restricted; please configure a private instance in Settings.)';
-    }
+    // Status 3 = Accepted (successful run)
+    final isAccepted = statusId == 3;
 
     return CodeExecutionResult(
-      stdout: stdout,
-      stderr: stderr,
-      exitCode: stderr.isEmpty ? 0 : -1,
-      isMock: true,
+      stdout: (data['stdout'] ?? '').toString().trim(),
+      stderr: (data['stderr'] ?? '').toString().trim(),
+      compileOutput: (data['compile_output'] ?? '').toString().trim().isEmpty
+          ? null
+          : data['compile_output'].toString().trim(),
+      exitCode: isAccepted ? 0 : 1,
+      statusDescription: statusDesc,
     );
   }
 }

@@ -6,6 +6,7 @@ import 'analysis_screen.dart';
 import 'reports_screen.dart';
 import 'profile_screen.dart';
 import 'code_review_screen.dart';
+import 'code_converter_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -81,6 +82,32 @@ class DashboardScreen extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (context) => const AnalysisScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildDashboardCard(
+                      context,
+                      'code review',
+                      Icons.rate_review,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CodeReviewScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildDashboardCard(
+                      context,
+                      'Code Converter',
+                      Icons.swap_horiz,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const CodeConverterScreen(),
                           ),
                         );
                       },
